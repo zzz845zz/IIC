@@ -23,7 +23,7 @@ class ClusterNet6cTwoHeadHead(nn.Module):
       features_sp_size = 8
 
     if not semisup:
-      self.num_sub_heads = config.num_sub_heads
+      self.num_sub_heads = config.num_sub_heads   # 5
 
       # is default (used for iid loss)
       # use multi heads
@@ -61,13 +61,13 @@ class ClusterNet6cTwoHead(VGGNet):
 
     self.trunk = ClusterNet6cTrunk(config)
 
-    self.head_A = ClusterNet6cTwoHeadHead(config, output_k=config.output_k_A)
+    self.head_A = ClusterNet6cTwoHeadHead(config, output_k=config.output_k_A)  # output = 50
 
     semisup = (hasattr(config, "semisup") and
                config.semisup)
     print("semisup: %s" % semisup)
 
-    self.head_B = ClusterNet6cTwoHeadHead(config, output_k=config.output_k_B,
+    self.head_B = ClusterNet6cTwoHeadHead(config, output_k=config.output_k_B,   # output = 10
                                           semisup=semisup)
 
     self._initialize_weights()

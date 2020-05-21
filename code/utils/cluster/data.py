@@ -256,9 +256,11 @@ def make_MNIST_data(config, tf1=None, tf2=None, tf3=None,
 # Data creation helpers --------------------------------------------------------
 
 def _create_dataloaders(config, dataset_class, tf1, tf2,
-                        partitions,
+                        partitions, # [True, False]
                         target_transform=None,
                         shuffle=False):
+    
+  # type : tf1
   train_imgs_list = []
   for train_partition in partitions:
     if "STL10" == config.dataset:
@@ -272,7 +274,9 @@ def _create_dataloaders(config, dataset_class, tf1, tf2,
         root=config.dataset_root,
         transform=tf1,
         train=train_partition,
-        target_transform=target_transform)
+        target_transform=target_transform, 
+        download=True
+      )
 
     if hasattr(config, "mix_train"):
       if config.mix_train and (train_partition == "train+unlabeled"):
@@ -280,17 +284,20 @@ def _create_dataloaders(config, dataset_class, tf1, tf2,
     train_imgs_list.append(train_imgs_curr)
 
   train_imgs = ConcatDataset(train_imgs_list)
+
+  # create data loader for dataset
   train_dataloader = torch.utils.data.DataLoader(train_imgs,
                                                  batch_size=config.dataloader_batch_sz,
                                                  shuffle=shuffle,
                                                  num_workers=0,
                                                  drop_last=False)
-
+  # assert Sequential
   if not shuffle:
     assert (isinstance(train_dataloader.sampler,
                        torch.utils.data.sampler.SequentialSampler))
   dataloaders = [train_dataloader]
 
+  # type : tf2
   for d_i in xrange(config.num_dataloaders):
     print("Creating auxiliary dataloader ind %d out of %d time %s" %
           (d_i, config.num_dataloaders, datetime.now()))
@@ -335,6 +342,7 @@ def _create_dataloaders(config, dataset_class, tf1, tf2,
   print("Number of batches per epoch: %d" % num_train_batches)
   sys.stdout.flush()
 
+  # dataloaders = [train_dataloader, train_tf_dataloader]
   return dataloaders
 
 

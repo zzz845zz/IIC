@@ -218,117 +218,109 @@ def sobel_make_transforms(config, random_affine=False,
 
 
 def greyscale_make_transforms(config):
-  tf1_list = []
-  tf3_list = []
-  tf2_list = []
+    tf1_list = []
+    tf3_list = []
+    tf2_list = []
 
   # tf1 and 3 transforms
-  if config.crop_orig:
-    # tf1 crop
-    if config.tf1_crop == "random":
-      print("selected random crop for tf1")
-      tf1_crop_fn = torchvision.transforms.RandomCrop(config.tf1_crop_sz)
-    elif config.tf1_crop == "centre_half":
-      print("selected centre_half crop for tf1")
-      tf1_crop_fn = torchvision.transforms.RandomChoice([
-        torchvision.transforms.RandomCrop(config.tf1_crop_sz),
-        torchvision.transforms.CenterCrop(config.tf1_crop_sz)
-      ])
-    elif config.tf1_crop == "centre":
-      print("selected centre crop for tf1")
-      tf1_crop_fn = torchvision.transforms.CenterCrop(config.tf1_crop_sz)
-    else:
-      assert (False)
-    tf1_list += [tf1_crop_fn]
+    if config.crop_orig:
+        # tf1 crop
+        if config.tf1_crop == "random":
+            print("selected random crop for tf1")
+            tf1_crop_fn = torchvision.transforms.RandomCrop(config.tf1_crop_sz)
+        elif config.tf1_crop == "centre_half":
+            print("selected centre_half crop for tf1")
+            
+            # choise one of two randomly
+            tf1_crop_fn = torchvision.transforms.RandomChoice([
+                torchvision.transforms.RandomCrop(config.tf1_crop_sz),
+                torchvision.transforms.CenterCrop(config.tf1_crop_sz)
+            ])
+        elif config.tf1_crop == "centre":
+            print("selected centre crop for tf1")
+            tf1_crop_fn = torchvision.transforms.CenterCrop(config.tf1_crop_sz)
+        else:
+            assert (False)
+        tf1_list += [tf1_crop_fn]
 
-    if config.tf3_crop_diff:
-      print("tf3 crop size is different to tf1")
-      tf3_list += [torchvision.transforms.CenterCrop(config.tf3_crop_sz)]
-    else:
-      print("tf3 crop size is same as tf1")
-      tf3_list += [torchvision.transforms.CenterCrop(config.tf1_crop_sz)]
+        if config.tf3_crop_diff:
+            print("tf3 crop size is different to tf1")
+            tf3_list += [torchvision.transforms.CenterCrop(config.tf3_crop_sz)]
+        else:
+            print("tf3 crop size is same as tf1")
+            tf3_list += [torchvision.transforms.CenterCrop(config.tf1_crop_sz)]
 
-  tf1_list += [torchvision.transforms.Resize(config.input_sz),
+    tf1_list += [torchvision.transforms.Resize(config.input_sz),
                torchvision.transforms.ToTensor()]
-  tf3_list += [torchvision.transforms.Resize(config.input_sz),
+    tf3_list += [torchvision.transforms.Resize(config.input_sz),
                torchvision.transforms.ToTensor()]
 
-  # tf2 transforms
-  if config.rot_val > 0:
-    # 50-50 do rotation or not
-    print("adding rotation option for imgs_tf: %d" % config.rot_val)
-    if config.always_rot:
-      print("always_rot")
-      tf2_list += [torchvision.transforms.RandomRotation(config.rot_val)]
-    else:
-      print("not always_rot")
-      tf2_list += [torchvision.transforms.RandomApply(
-        [torchvision.transforms.RandomRotation(config.rot_val)], p=0.5)]
+    if config.crop_other:
+        imgs_tf_crops = []
+        
+        # tf2_crop_szs = [16, 20, 24]
+        for tf2_crop_sz in config.tf2_crop_szs:
+            if config.tf2_crop == "random":
+                print("selected random crop for tf2")
+                tf2_crop_fn = torchvision.transforms.RandomCrop(tf2_crop_sz)
+            elif config.tf2_crop == "centre_half":
+                print("selected centre_half crop for tf2")
+                tf2_crop_fn = torchvision.transforms.RandomChoice([
+                    torchvision.transforms.RandomCrop(tf2_crop_sz),
+                    torchvision.transforms.CenterCrop(tf2_crop_sz)
+                ])
+            elif config.tf2_crop == "centre":
+                print("selected centre crop for tf2")
+                tf2_crop_fn = torchvision.transforms.CenterCrop(tf2_crop_sz)
+            else:
+                assert (False)
 
-  if config.crop_other:
-    imgs_tf_crops = []
-    for tf2_crop_sz in config.tf2_crop_szs:
-      if config.tf2_crop == "random":
-        print("selected random crop for tf2")
-        tf2_crop_fn = torchvision.transforms.RandomCrop(tf2_crop_sz)
-      elif config.tf2_crop == "centre_half":
-        print("selected centre_half crop for tf2")
-        tf2_crop_fn = torchvision.transforms.RandomChoice([
-          torchvision.transforms.RandomCrop(tf2_crop_sz),
-          torchvision.transforms.CenterCrop(tf2_crop_sz)
-        ])
-      elif config.tf2_crop == "centre":
-        print("selected centre crop for tf2")
-        tf2_crop_fn = torchvision.transforms.CenterCrop(tf2_crop_sz)
-      else:
-        assert (False)
+            print("adding crop size option for imgs_tf: %d" % tf2_crop_sz)
+            imgs_tf_crops.append(tf2_crop_fn)
 
-      print("adding crop size option for imgs_tf: %d" % tf2_crop_sz)
-      imgs_tf_crops.append(tf2_crop_fn)
+        tf2_list += [torchvision.transforms.RandomChoice(imgs_tf_crops)]
 
-    tf2_list += [torchvision.transforms.RandomChoice(imgs_tf_crops)]
-
-  tf2_list += [torchvision.transforms.Resize(tuple(np.array([config.input_sz,
+    tf2_list += [torchvision.transforms.Resize(tuple(np.array([config.input_sz,
                                                              config.input_sz])))]
 
-  if not config.no_flip:
-    print("adding flip")
-    tf2_list += [torchvision.transforms.RandomHorizontalFlip()]
-  else:
-    print("not adding flip")
+    if not config.no_flip:
+        print("adding flip")
+        tf2_list += [torchvision.transforms.RandomHorizontalFlip()]
+    else:
+        print("not adding flip")
 
-  if not config.no_jitter:
-    print("adding jitter")
-    tf2_list += [
-      torchvision.transforms.ColorJitter(brightness=0.4, contrast=0.4,
-                                         saturation=0.4, hue=0.125)]
-  else:
-    print("not adding jitter")
+    if not config.no_jitter:
+        print("adding jitter")
+        tf2_list += [
+          torchvision.transforms.ColorJitter(brightness=0.4, contrast=0.4,
+                                             saturation=0.4, hue=0.125)]
+    else:
+        print("not adding jitter")
 
-  tf2_list += [torchvision.transforms.ToTensor()]
+    tf2_list += [torchvision.transforms.ToTensor()]
 
-  # admin transforms
-  if config.demean:
-    print("demeaning data")
-    tf1_list.append(torchvision.transforms.Normalize(mean=config.data_mean,
-                                                     std=config.data_std))
-    tf2_list.append(torchvision.transforms.Normalize(mean=config.data_mean,
-                                                     std=config.data_std))
-    tf3_list.append(torchvision.transforms.Normalize(mean=config.data_mean,
-                                                     std=config.data_std))
-  else:
-    print("not demeaning data")
+    # admin transforms
+    if config.demean:
+        print("demeaning data")
+        tf1_list.append(torchvision.transforms.Normalize(mean=config.data_mean,
+                                                         std=config.data_std))
+        tf2_list.append(torchvision.transforms.Normalize(mean=config.data_mean,
+                                                         std=config.data_std))
+        tf3_list.append(torchvision.transforms.Normalize(mean=config.data_mean,
+                                                         std=config.data_std))
+    else:
+        print("not demeaning data")
 
-  if config.per_img_demean:
-    print("per image demeaning data")
-    tf1_list.append(per_img_demean)
-    tf2_list.append(per_img_demean)
-    tf3_list.append(per_img_demean)
-  else:
-    print("not per image demeaning data")
+    if config.per_img_demean:
+        print("per image demeaning data")
+        tf1_list.append(per_img_demean)
+        tf2_list.append(per_img_demean)
+        tf3_list.append(per_img_demean)
+    else:
+        print("not per image demeaning data")
 
-  tf1 = torchvision.transforms.Compose(tf1_list)
-  tf2 = torchvision.transforms.Compose(tf2_list)
-  tf3 = torchvision.transforms.Compose(tf3_list)
+    tf1 = torchvision.transforms.Compose(tf1_list)
+    tf2 = torchvision.transforms.Compose(tf2_list)
+    tf3 = torchvision.transforms.Compose(tf3_list)
 
-  return tf1, tf2, tf3
+    return tf1, tf2, tf3
